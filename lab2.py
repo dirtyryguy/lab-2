@@ -10,6 +10,8 @@ def blinker(channel):
     elif channel ==27:
         global pwm2
         pwm = pwm2
+    else:
+        return
     pwm.start(0)
     while 1:
         for dc in range(101):
@@ -23,11 +25,19 @@ def kill_blinker(channel):
     if channel == 17:
         global pwm1
         pwm = pwm1
+    elif channel == 27:
+        global pwm2
+        pwm = pwm2
+    else:
+        return
+    pwm.stop()
 
 try:
     pwm3.start(50)
     GPIO.add_event_detect(in1, GPIO.RISING, callback=blinker, bouncetime=100)
     GPIO.add_event_detect(in2, GPIO.RISING, callback=blinker, bouncetime=100)
+    GPIO.add_event_detect(in1, GPIO.FALLING, callback=kill_blinker, bouncetime=100)
+    GPIO.add_event_detect(in2, GPIO.FALLING, callback=kill_blinker, bouncetime=100)
     while 1:
         pass
 except KeyboardInterrupt:
