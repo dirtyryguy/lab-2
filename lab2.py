@@ -1,15 +1,28 @@
-# Creating PWM objects
-pwm1 = GPIO.PWM(out1, 100)
-pwm2 = GPIO.PWM(out2, 100)
-pwm3 = GPIO.PWM(out3, 1)
+import RPi.GPIO as GPIO
+import time
+
+GPIO.setmode(GPIO.BCM)
+
+# input port numbers
+in1, in2 = 17, 27
+
+# output port numbers
+out1, out2, out3 = 16, 20, 21
+
+GPIO.setup(in1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(in2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(out1, GPIO.OUT)
+GPIO.setup(out2, GPIO.OUT)
+GPIO.setup(out3, GPIO.OUT)
+
+# Creating PWM object
+pwm_flash = GPIO.PWM(out3)
 
 def blinker(channel):
-    if channel == 17:
-        global pwm1
-        pwm = pwm1
-    elif channel ==27:
-        global pwm2
-        pwm = pwm2
+    if channel == in1:
+        pwm = GPIO.PWM(out1)
+    elif channel == in2:
+        pwm = GPIO.PWM(out2)
     else:
         return
     pwm.start(0)
@@ -17,32 +30,25 @@ def blinker(channel):
         for dc in range(101):
             pwm.ChangeDutyCycle(dc)
             time.sleep(0.005)
+            if not GPIO.input(channel):
+                break
         for dc in range(100, -1, -1):
             pwm.ChangeDutyCycle(dc)
             time.sleep(0.005)
-
-def kill_blinker(channel):
-    if channel == 17:
-        global pwm1
-        pwm = pwm1
-    elif channel == 27:
-        global pwm2
-        pwm = pwm2
-    else:
-        return
+            if not GPIO.input(channel):
+                break
     pwm.stop()
 
 try:
-    pwm3.start(50)
+    pwm_flash.start(0)
     GPIO.add_event_detect(in1, GPIO.RISING, callback=blinker, bouncetime=100)
     GPIO.add_event_detect(in2, GPIO.RISING, callback=blinker, bouncetime=100)
-    GPIO.add_event_detect(in1, GPIO.FALLING, callback=kill_blinker, bouncetime=100)
-    GPIO.add_event_detect(in2, GPIO.FALLING, callback=kill_blinker, bouncetime=100)
     while 1:
-        pass
+        pwm_flash.ChangeDutyCycle(0)
+        time.sleep(0.5)
+        pwm_flash.ChangeDutyCycle(100)
+        time.sleep(0.5)
 except KeyboardInterrupt:
     print('\nExiting')
-    pwm1.stop()
-    pwm2.stop()
-    pwm3.stop()
+finally:
     GPIO.cleanup()
